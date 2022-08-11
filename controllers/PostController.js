@@ -89,6 +89,7 @@ export const getOnePost = (req, res) => {
 export const removePost = async (req, res) => {
   try {
     const id = req.params.id
+
     PostModel.findByIdAndDelete({
       _id: id
     }, (err, doc) => {
@@ -115,6 +116,40 @@ export const removePost = async (req, res) => {
 
     res.status(500).json({
       message: "Cant find a post",
+    });
+  }
+}
+
+export const updatePost = async (req, res) => {
+  try {
+    const id = req.params.id
+    const {
+      title,
+      text,
+      imageUrl,
+      user,
+      tags
+    } = req.body
+
+    const newPost = await PostModel.updateOne({
+      _id: id
+    }, {
+      title,
+      text,
+      imageUrl,
+      user,
+      tags
+    })
+
+    res.json({
+      success: true,
+      updated: true
+    })
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Cant update a post",
     });
   }
 }
