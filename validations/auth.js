@@ -12,3 +12,10 @@ export const registerValidator = [
   }),
   body('avatarUrl', 'incorrect link').optional().isURL(),
 ]
+
+export const loginValidator = [
+  body('email', 'incorrect email').isEmail(),
+  body('password', 'pass field has to have at least 5 symbols').isLength({
+    min: 5
+  }),
+]

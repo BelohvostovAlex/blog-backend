@@ -1,77 +1,59 @@
-import express from 'express'
-import jwt from 'jsonwebtoken'
-import bcrypt from 'bcrypt'
-import mongoose from 'mongoose'
-import {
-  validationResult
-} from 'express-validator'
+import 'dotenv/config'
+import express from "express";
+import mongoose from "mongoose";
 
 import {
-  registerValidator
-} from './validations/auth.js'
+  registerValidator,
+  loginValidator
+} from "./validations/auth.js";
 import {
-  UserModel
-}
-from './models/User.js'
+  postCreateValidator
+} from './validations/post.js'
+import checkAuth from './utils/checkAuth.js'
+import {
+  register,
+  login,
+  getMe
+} from './controllers/UserController.js'
+import {
+  createPost,
+  getAllPosts,
+  getOnePost,
+  removePost
+} from './controllers/PostController.js'
 
-mongoose.connect('mongodb+srv://admin:wwwwww@cluster0.epstaca.mongodb.net/blog?retryWrites=true&w=majority').then(() => console.log('DB ok'))
+const PORT = process.env.PORT || 5000
 
-const app = express()
+const app = express();
+app.use(express.json());
 
-app.use(express.json())
 
-app.get('/', (req, res) => {
-  res.send('Hello world')
-})
+app.post("/auth/register", registerValidator, register)
+app.post('/auth/login', loginValidator, login)
+app.get('/auth/me', checkAuth, getMe)
 
-app.post('/auth/register', registerValidator, async (req, res) => {
+app.post('/posts', checkAuth, postCreateValidator, createPost)
+app.get('/posts', getAllPosts)
+app.get('/posts/:id', getOnePost)
+app.delete('/posts/:id', checkAuth, removePost)
+
+const start = async () => {
   try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json(errors.array())
-    }
-    const {
-      email,
-      fullName,
-      password,
-      avatarUrl
-    } = req.body
+    await mongoose
+      .connect(
+        "mongodb+srv://admin:wwwwww@cluster0.epstaca.mongodb.net/blog?retryWrites=true&w=majority"
+      )
 
-    const salt = await bcrypt.genSalt(10)
-    const passwordHash = await bcrypt.hash(password, salt)
+    app.listen(PORT, (err) => {
+      if (err) {
+        return console.log(err);
+      }
 
-    const doc = new UserModel({
-      email,
-      fullName,
-      avatarUrl,
-      passwordHash
-    })
-
-    const user = await doc.save()
-
-    const token = jwt.sign({
-      _id: user._id
-    }, 'secret123', {
-      expiresIn: '30d'
-    })
-
-    res.json({
-      ...user,
-      ...token,
-      success: true
-    })
+      console.log("Server is ready");
+    });
   } catch (error) {
-    console.log(error)
-    res.status(500).json({
-      message: 'Cant register a new user'
-    })
+    console.log(error.message)
   }
-})
+}
 
-app.listen(4000, (err) => {
-  if (err) {
-    return console.log(err)
-  }
-
-  console.log('Server is ready')
-})
+start()
